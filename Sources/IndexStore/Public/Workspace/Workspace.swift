@@ -104,7 +104,6 @@ public final class Workspace {
                 library: lib,
                 listenToUnitEvents: listenToUnitEvents
             )
-            index?.pollForUnitChangesAndWait(isInitialScan: true)
             let dbPath = indexDatabasePath
             let storePath = indexStorePath
             logger.info("Opened IndexStoreDB at \(dbPath) with store path \(storePath)")
