@@ -35,7 +35,7 @@ public final class Workspace {
     public private(set) var index: IndexStoreDB?
 
     /// Bool whether any index store changes should be listened for.
-    /// Defaults to `true`. When initialized with a ``Configuration`` will be set to `false` when the ``Configuration/isRunningUnitTests`` is `true`.
+    /// Defaults to `true`. When `false`, only explicit calls to `pollForUnitChangesAndWait` will trigger index updates.
     public let listenToUnitEvents: Bool
 
     /// Whether the underlying IndexStoreDB instance should watch for out-of-date file changes.
@@ -105,7 +105,7 @@ public final class Workspace {
         indexStorePath = configuration.indexStorePath
         indexDatabasePath = configuration.indexDatabasePath
         libIndexStorePath = configuration.libIndexStorePath
-        listenToUnitEvents = !configuration.isRunningUnitTests
+        listenToUnitEvents = configuration.listenToUnitEvents
         enableOutOfDateFileWatching = configuration.enableOutOfDateFileWatching
         self.delegate = delegate
         self.logger = logger

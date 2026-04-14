@@ -29,9 +29,14 @@ public extension IndexStore {
         /// The path to the libIndexStore dylib.
         public let libIndexStorePath: String
 
-        /// Internal flag indicating whether or not the process is running with an `XCTestConfigurationFilePath`.
-        /// **Note: ** This is derived from the active `ProcessInfo`. It does not support overriding at the moment.
-        public let isRunningUnitTests: Bool
+        /// Whether the underlying IndexStoreDB instance should listen to unit events.
+        ///
+        /// When `true`, IndexStoreDB starts background event listening via `startEventListening`,
+        /// which keeps dispatch queues alive. When `false`, only explicit calls to
+        /// `pollForUnitChangesAndWait` will trigger index updates.
+        ///
+        /// Defaults to `true`.
+        public let listenToUnitEvents: Bool
 
         /// Whether the underlying IndexStoreDB instance should watch for out-of-date file changes.
         ///
@@ -48,6 +53,7 @@ public extension IndexStore {
             case indexStorePath
             case indexDatabasePath
             case libIndexStorePath
+            case listenToUnitEvents
             case enableOutOfDateFileWatching
         }
 
@@ -63,7 +69,7 @@ public extension IndexStore {
             indexDatabasePath = Self.resolveIndexDatabasePath(provided: databasePath)
             indexStorePath = try Self.resolveIndexStorePath(provided: storePath, xcodeDetails: xcodeDetails)
             libIndexStorePath = try Self.resolveLibIndexStorePath(provided: libIndexPath, xcodeDetails: xcodeDetails)
-            isRunningUnitTests = Self.resolveIsRunningTests()
+            listenToUnitEvents = try container.decodeIfPresent(Bool.self, forKey: .listenToUnitEvents) ?? true
             enableOutOfDateFileWatching = try container.decodeIfPresent(Bool.self, forKey: .enableOutOfDateFileWatching) ?? true
         }
 
@@ -90,6 +96,7 @@ public extension IndexStore {
             indexStorePath: String? = nil,
             indexDatabasePath: String? = nil,
             libIndexStorePath: String? = nil,
+            listenToUnitEvents: Bool = true,
             enableOutOfDateFileWatching: Bool = true
         ) throws {
             let xcodeDetails = try Self.resolveXcodeDetails()
@@ -97,7 +104,7 @@ public extension IndexStore {
             self.indexDatabasePath = Self.resolveIndexDatabasePath(provided: indexDatabasePath)
             self.libIndexStorePath = try Self.resolveLibIndexStorePath(provided: libIndexStorePath, xcodeDetails: xcodeDetails)
             self.indexStorePath = try Self.resolveIndexStorePath(provided: indexStorePath, xcodeDetails: xcodeDetails)
-            isRunningUnitTests = Self.resolveIsRunningTests()
+            self.listenToUnitEvents = listenToUnitEvents
             self.enableOutOfDateFileWatching = enableOutOfDateFileWatching
         }
 
@@ -111,13 +118,6 @@ public extension IndexStore {
             return "\(NSTemporaryDirectory())index_\(getpid())"
         }
 
-        /// Will return the provided value if not `nil`, otherwise will return a path within the temporary directory.
-        /// - Parameter provided: The provided value to assess.
-        /// - Returns: `String`
-        static func resolveIsRunningTests() -> Bool {
-            let processInfo = ProcessInfo()
-            return processInfo.environment.keys.contains(EnvironmentKeys.testConfigurationPath)
-        }
 
         /// Will return the provided value if not `nil`, otherwise will return the ideal build products value from the provided process info instance.
         /// - Parameter provided: The provided value to assess.
